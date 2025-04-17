@@ -6,3 +6,8 @@ CREATE TABLE viewer (
     lastlogin DATE NOT NULL,
     status BIT NOT NULL
 );
+
+
+http://localhost:8080/viewers
+
+http://localhost:8080/viewers/stream
