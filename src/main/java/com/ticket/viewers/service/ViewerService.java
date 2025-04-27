@@ -1,5 +1,6 @@
 package com.ticket.viewers.service;
 
+import com.ticket.viewers.exception.handler.VieweNotFoundException;
 import com.ticket.viewers.model.Viewers;
 import com.ticket.viewers.repo.ViewerRepository;
 import org.springframework.http.codec.ServerSentEvent;
@@ -24,7 +25,7 @@ public class ViewerService {
     }
 
     public Flux<Viewers> getAllViewers() {
-        return viewerRepository.findAll();
+        return viewerRepository.findAll().switchIfEmpty(Mono.error(new VieweNotFoundException("No data found")));
     }
 
     public Flux<ServerSentEvent<Viewers>> streamViewers() {
@@ -33,7 +34,7 @@ public class ViewerService {
     }
 
     public Flux<Viewers> getViewersByTicketId(Integer ticketId) {
-        return viewerRepository.findByTicketid(ticketId);
+        return viewerRepository.findByTicketid(ticketId).switchIfEmpty(Mono.error(new VieweNotFoundException("ticketId not found "+ticketId)));
     }
 
 

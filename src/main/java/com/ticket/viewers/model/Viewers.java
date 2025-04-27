@@ -4,7 +4,7 @@ package com.ticket.viewers.model;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Table;
 
-import javax.validation.constraints.NotBlank;
+//import javax.validation.constraints.NotBlank;
 import java.time.LocalDate;
 
 //@Data
@@ -20,16 +20,16 @@ public class Viewers {
    // @GeneratedValue(strategy = GenerationType.IDENTITY) // use if you're using JPA; for R2DBC, custom handling
     private Long id;
 
-    @NotBlank(message = "viewer.ticketId must be present")
+//    @NotBlank(message = "viewer.ticketId must be present")
     private Integer ticketid;
 
-    @NotBlank(message = "viewer.name must be present")
+//    @NotBlank(message = "viewer.name must be present")
     private String name;
 
-    @NotBlank(message = "viewer.lastLogin must be present")
+//    @NotBlank(message = "viewer.lastLogin must be present")
     private LocalDate lastlogin;
 
-    @NotBlank(message = "viewer.status must be present")
+//    @NotBlank(message = "viewer.status must be present")
     private Boolean status;
 
 
