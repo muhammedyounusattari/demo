@@ -21,3 +21,23 @@ curl --location 'http://localhost:8080/viewers' \
 "status": true
 }
 '
+
+
+
+======
+
+.exchangeToMono(response -> {
+System.out.println("Status code: " + response.rawStatusCode());
+if (response.statusCode().is2xxSuccessful()) {
+return response.bodyToMono(Product.class);
+} else {
+return response.bodyToMono(String.class)
+.flatMap(errorBody -> Mono.error(new RuntimeException("Error: " + errorBody)));
+}
+})
+.timeout(Duration.ofSeconds(5))
+.doOnError(error -> System.out.println("Error during call: " + error.getMessage()))
+.subscribe(
+product -> System.out.println("Received product: " + product),
+err -> System.out.println("Failed: " + err.getMessage())
+);
