@@ -1,45 +1,51 @@
-package deleteit;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
-import com.nimbusds.jose.*;
-import com.nimbusds.jose.crypto.*;
-import com.nimbusds.jwt.*;
+import java.util.List;
+import java.util.Map;
 
-import java.security.KeyStore;
-import java.security.PrivateKey;
-import java.security.cert.Certificate;
-import java.util.Date;
+public class GraphApiPaginatedClient {
 
-public class JwtTokenGenerator {
+    private final WebClient webClient;
 
-    public static String generateJwtToken(String appId, String tenantId, PrivateKey privateKey, Certificate certificate) throws JOSEException {
-        // Create JWT claims
-        JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
-                .audience("00000002-0000-0000-c000-000000000000")
-                .issuer(appId)
-                .notBeforeTime(new Date())
-                .expirationTime(new Date(System.currentTimeMillis() + 600000)) // 10 minutes
+    public GraphApiPaginatedClient(WebClient.Builder builder) {
+        this.webClient = builder
+                .baseUrl("https://graph.microsoft.com/v1.0")
                 .build();
-
-        // Create JWS header with the certificate
-        JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.RS256)
-                .x509CertChain(Collections.singletonList(Base64.encode(certificate.getEncoded())))
-                .build();
-
-        // Create the signed JWT
-        SignedJWT signedJWT = new SignedJWT(header, claimsSet);
-        signedJWT.sign(new RSASSASigner(privateKey));
-
-        return signedJWT.serialize();
     }
 
-    public static void main(String[] args) throws Exception {
-        // Load the certificate and private key from a keystore
-        KeyStore keyStore = KeyStore.getInstance("PKCS12");
-        keyStore.load(new FileInputStream("path/to/keystore.p12"), "keystorePassword".toCharArray());
-        PrivateKey privateKey = (PrivateKey) keyStore.getKey("alias", "keyPassword".toCharArray());
-        Certificate certificate = keyStore.getCertificate("alias");
+    public Flux<Map<String, Object>> getAllMembers(String groupId) {
+        String initialUrl = "/groups/" + groupId + "/members?$top=50";
 
-        String jwtToken = generateJwtToken("YOUR_APP_ID", "YOUR_TENANT_ID", privateKey, certificate);
-        System.out.println("Generated JWT Token: " + jwtToken);
+        return fetchPage(initialUrl)
+                .expand(response -> {
+                    Object next = response.get("@odata.nextLink");
+                    return next != null
+                            ? fetchPageByFullUrl(next.toString())
+                            : Mono.empty();
+                })
+                .flatMap(response -> {
+                    Object value = response.get("value");
+                    if (value instanceof List<?>) {
+                        List<?> list = (List<?>) value;
+                        return Flux.fromIterable((List<Map<String, Object>>) list);
+                    }
+                    return Flux.empty();
+                });
+    }
+
+    private Mono<Map<String, Object>> fetchPage(String relativeUrl) {
+        return webClient.get()
+                .uri(relativeUrl)
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<>() {});
+    }
+
+    private Mono<Map<String, Object>> fetchPageByFullUrl(String fullUrl) {
+        return webClient.get()
+                .uri(fullUrl)
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<>() {});
     }
 }
